@@ -102,6 +102,3 @@ POST /register
 ```bash
 php artisan test
 ```
-Конечно, давайте дополним шаблон README.md, чтобы включить информацию о аутентификации с использованием Laravel Sanctum и системе ролей через Laravel Spatie:
-
-```markdown
