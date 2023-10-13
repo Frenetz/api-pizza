@@ -1,0 +1,1995 @@
+openapi: 3.0.0
+info: 
+  title: REST API для сайта по продаже пиццы
+  version: 0.0.1
+servers: 
+  - url: http://127.0.0.1:8000/api
+    description: Local development server
+paths:
+  /register:
+    post:
+      summary: Регистрация пользователя
+      description: Регистрация нового пользователя в системе. Данный адрес доступен только пользователям с ролью Guest
+      tags:
+        - Authenticate
+      x-roles: [Guest] # К данному маршруту имеют доступ пользователи с ролью "Guest" 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Ivan"
+                surname:
+                  type: string
+                  example: "Ivanov"
+                patronymic:
+                  type: string
+                  example: "Ivanovich"                  
+                email:
+                  type: string
+                  format: email
+                  example: "example@mail.ru"
+                password:
+                  type: string
+                  example: "qwerty123"
+                phone:
+                  type: string
+                  example: "81234567890"
+                date_of_birth:
+                  type: string
+                  format: date
+                  example: "2003-05-10"
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:          
+              example:
+                message: Пользователь успешно зарегистрирован   
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                  
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name:
+                    - The name field must be a string.
+                  email:
+                    - The email field must be a string.
+                    - The email field must be a valid email address.
+                  password:
+                    - The password field must be a string.
+                    - The password field must be at least 6 characters.
+                  surname:
+                    - The surname field must be a string.
+                  patronymic:
+                    - The patronymic field must be a string.
+                  phone:
+                    - The phone field must be a string.
+                  date_of_birth:
+                    - The date of birth field must be a valid date.      
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"   
+  /login:
+    post:
+      summary: Аутентификация пользователя
+      description: Аутентификация пользователя в системе. Данный адрес доступен только пользователям с ролью Guest
+      tags:
+        - Authenticate
+      x-roles: [Guest] # К данному маршруту имеют доступ пользователи с ролью "Guest" 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "example@mail.ru"
+                password:
+                  type: string
+                  example: "qwerty123"
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:          
+              example:
+                token: 1|z7OgFab9rL1vfqkNJ9wIb1fd0KA534vN3TcpvDmmd7806782   
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                  
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name:
+                    - The name field must be a string.
+                  email:
+                    - The email field must be a string.
+                    - The email field must be a valid email address.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /logout:
+    get:
+      summary: Выход пользователя из аккаунта
+      description: Выход пользователя из системы. Данный адрес доступен только пользователям с ролями Admin и Client
+      tags:
+        - Authenticate
+      operationId: logoutCurrentUser
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey     
+      x-roles: [Admin,Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"  
+      responses:
+        '200':
+          description: Успешный выход из аккаунта
+          content:
+            application/json:          
+              example:
+                message: Вы вышли из системы
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                   
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /user:
+    get: 
+      summary: Получение текущего пользователя 
+      description: Данный адрес позволяет получить информацию о текущем аутентифицированном пользователе. Данная операция доступна только пользователям с ролью Admin и Client
+      tags:
+        - Users
+      operationId: getCurrentUser
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin, Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client" 
+      responses:
+        '200':
+          description: Успешный ответ с текущим пользователем
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"              
+  /users:
+    get:
+      summary: Получение всех пользователей
+      description: Данный адрес предназначен для получения списка всех зарегистрированных пользователей. Только пользователи с ролью Admin имеют доступ к данному адресу
+      tags: 
+        - Users
+      operationId: getAllUsers  
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"
+      responses:
+        '200':
+          description: Успешный ответ со списком пользователей
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Users' 
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                  
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /addresses:
+    get:
+      summary: Получить список адресов
+      description: Этот маршрут возвращает адреса в зависимости от роли пользователя. Администратор может посмотреть список всех адресов, а клиент только список своих адресов
+      operationId: getAddresses
+      tags:
+        - Addresses
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin, Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"                 
+      responses:
+        '200':
+          description: Успешный ответ со списком адресов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  addresses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Addresses'  
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"                 
+    post:
+      summary: Создать новый адрес
+      description: Этот маршрут создает новый адрес. Данный адрес доступен пользователям с ролями Admin и User
+      operationId: createAddress
+      tags:
+        - Addresses
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin, Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"           
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                city:
+                  type: string
+                  example: "Москва"
+                street:
+                  type: string
+                  example: "Лесная"
+                house_number:
+                  type: string
+                  example: "1"
+                apartment_number:
+                  type: string
+                  example: "123"
+                entrance:
+                  type: string
+                  example: "5"
+                floor:
+                  type: string
+                  example: "8"
+                intercom:
+                  type: string
+                  example: "123"
+                gate:
+                  type: boolean
+                  example: false
+                comment:
+                  type: string
+                  example: "Домофон не работает"
+              required:
+                - city
+                - street
+                - house_number    
+      responses:
+        '201':
+          description: Адрес создан успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Адрес успешно добавлен
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  city: 
+                      - The city field must be a string.
+                      - The city field is required.
+                  street: 
+                      - The street field must be a string.
+                      - The street field is required.
+                  house_number: 
+                      - The house number field must be an integer.
+                      - The house number field is required.
+                  apartment_number: 
+                      - The apartment number field must be an integer.
+                  entrance: 
+                      - The entrance field must be a string.
+                  floor: 
+                      - The floor field must be an integer.
+                  intercom: 
+                      - The intercom field must be an integer.
+                  gate: 
+                      - The gate field must be true or false.
+                  comment: 
+                      - The comment field must be a string.    
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"    
+  /addresses/{id}:
+    get:
+      summary: Получить информацию об адресе по идентификатору
+      description: Этот маршрут позволяет получить конкретный адрес. Администратор может посмотреть любой адрес, а клиент только свои адреса
+      operationId: getAddress
+      tags:
+        - Addresses
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin, Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"            
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор адреса
+      responses:
+        '200':
+          description: Успешный запрос на просмотр пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  address:
+                    $ref: '#/components/schemas/Address'
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                    
+        '404':
+          description: Адрес не найден    
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+    delete:
+      summary: Удалить адрес по идентификатору
+      description: Этот маршрут позволяет удалить конкретный адрес. Администратор может удалить любой адрес, а клиент только свои адреса
+      operationId: deleteAddress      
+      tags:
+        - Addresses
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin, Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"            
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор адреса          
+      responses:
+        '200':
+          description: Успешный запрос на удаление пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Адрес успешно удален
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"       
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"                     
+  /addresses/{id}/edit:
+    patch:
+      summary: Обновить данные адреса по идентификатору
+      description: Этот маршрут позволяет обновить данные конкретного адреса. Администратор может обновить любой адрес, а клиент только свои адреса
+      operationId: updateAddress
+      tags:
+        - Addresses
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin, Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"            
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор адреса
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                city:
+                  type: string
+                  example: "Москва"
+                street:
+                  type: string
+                  example: "Лесная"
+                house_number:
+                  type: string
+                  example: "1"
+                apartment_number:
+                  type: string
+                  example: "123"
+                entrance:
+                  type: string
+                  example: "5"
+                floor:
+                  type: string
+                  example: "8"
+                intercom:
+                  type: string
+                  example: "123"
+                gate:
+                  type: boolean
+                  example: false
+                comment:
+                  type: string
+                  example: "Домофон не работает"
+              required:
+                - city
+                - street
+                - house_number              
+      responses:
+        '200':
+          description: Адрес создан успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Адрес успешно обновлен
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"      
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  city: 
+                      - The city field must be a string.
+                  street: 
+                      - The street field must be a string.
+                  house_number: 
+                      - The house number field must be an integer.
+                  apartment_number: 
+                      - The apartment number field must be an integer.
+                  entrance: 
+                      - The entrance field must be a string.
+                  floor: 
+                      - The floor field must be an integer.
+                  intercom: 
+                      - The intercom field must be an integer.
+                  gate: 
+                      - The gate field must be true or false.
+                  comment: 
+                      - The comment field must be a string.    
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /delivery-methods:
+    get: 
+      summary: Получить список доступных способов доставки
+      description: Этот маршрут позволяет получить список доступных способов доставки. У данного адреса нет ограничений на роли пользователей
+      operationId: getDeliveryMethods
+      tags:
+        - DeliveryMethods
+      responses:
+        '200':
+          description: Успешный запрос на просмотр способов доставки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  delivery-methods:
+                    $ref: '#/components/schemas/DeliveryMethods'
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Создать новый способ доставки
+      description: Этот маршрут позволяет создать новый способ доставки. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: createDeliveryMethod
+      tags:
+        - DeliveryMethods
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"          
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Курьер"
+              required:
+                - name 
+      responses:
+        '201':
+          description: Успешный запрос на создание способа доставки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Способ доставки был успешно создан
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                      - The name field must be a string.
+                      - The name field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /delivery-methods/{id}:
+    get:
+      summary: Получить способ доставки по идентификатору
+      description: Этот маршрут позволяет получить конкретный способ доставки. У данного адреса нет ограничений на роли пользователей
+      tags:
+        - DeliveryMethods
+      operationId: getDeliveryMethod
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор способа доставки        
+      responses:        
+        '200':
+          description: Успешный запрос на просмотр способа доставки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  delivery-methods:
+                    $ref: '#/components/schemas/DeliveryMethod'
+        '404':
+          description: Способ доставки не найден                     
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: Удалить способ доставки по идентификатору
+      description: Этот маршрут позволяет удалить способ доставки. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: deleteDeliveryMethod
+      tags:
+        - DeliveryMethods
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"          
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор способа доставки       
+      responses:
+        '200':
+          description: Успешный запрос на удаление способа доставки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Способ доставки был успешно удален
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /delivery-methods/{id}/edit:
+    patch:
+      summary: Обновить способ доставки по идентификатору
+      description: Этот маршрут позволяет обновить способ доставки. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: updateDeliveryMethod
+      tags:
+        - DeliveryMethods
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"          
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор способа доставки       
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Курьер"
+              required:
+                - name 
+      responses:
+        '200':
+          description: Успешный запрос на обновление способа доставки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Способ доставки был успешно обновлен
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                      - The name field must be a string.
+                      - The name field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /payment-methods:
+    get:
+      summary: Получить список доступных способов оплаты
+      description: Этот маршрут позволяет получить список доступных способов оплаты. У данного адреса нет ограничений на роли пользователей
+      operationId: getPaymentMethods
+      tags:
+        - PaymentMethods
+      responses:
+        '200':
+          description: Успешный запрос на просмотр способов оплаты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment-methods:
+                    $ref: '#/components/schemas/PaymentMethods'
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Создать новый способ оплаты
+      description: Этот маршрут позволяет создать новый способ оплаты. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: createPaymentMethod
+      tags:
+        - PaymentMethods
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"          
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Наличные"
+              required:
+                - name 
+      responses:
+        '201':
+          description: Успешный запрос на создание способа оплаты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Способ оплаты был успешно добавлен
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                      - The name field must be a string.
+                      - The name field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /payment-methods/{id}:
+    get:
+      summary: Получить способ оплаты по идентификатору
+      description: Этот маршрут позволяет получить конкретный способ оплаты. У данного адреса нет ограничений на роли пользователей
+      operationId: getPaymentMethod
+      tags:
+        - PaymentMethods
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор способа оплаты        
+      responses:        
+        '200':
+          description: Успешный запрос на просмотр способа оплаты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment-method:
+                    $ref: '#/components/schemas/PaymentMethod'
+        '404':
+          description: Способ оплаты не найден                     
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error" 
+    delete:
+      summary: Удалить способ оплаты по идентификатору
+      description: Этот маршрут позволяет удалить способ оплаты. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: deletePaymentMethod
+      tags:
+        - PaymentMethods
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"         
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор способа оплаты      
+      responses:
+        '200':
+          description: Успешный запрос на удаление способа оплаты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Способ оплаты был успешно удален
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"      
+  /payment-methods/{id}/edit:
+    patch:
+      summary: Обновить способ оплаты по идентификатору
+      description: Этот маршрут позволяет обновить способ оплаты. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: updatePaymentMethod
+      tags:
+        - PaymentMethods
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"          
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор способа оплаты      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Наличные"
+              required:
+                - name 
+      responses:
+        '200':
+          description: Успешный запрос на обновление способа оплаты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Способ оплаты был успешно обновлен
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                      - The name field must be a string.
+                      - The name field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /product-categories:
+    get:
+      summary: Получить список категорий товаров
+      description: Этот маршрут позволяет получить список категорий товаров. У данного адреса нет ограничений на роли пользователей
+      operationId: getProductCategories
+      tags:
+        - ProductCategories
+      responses:
+        '200':
+          description: Успешный запрос на просмотр категорий товаров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product-categories:
+                    $ref: '#/components/schemas/ProductCategories'
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Создать новую категорию товаров
+      description: Этот маршрут позволяет создать новую категорию товаров. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: createProductCategory
+      tags:
+        - ProductCategories
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"         
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Пицца"
+              required:
+                - name 
+      responses:
+        '201':
+          description: Успешный запрос на создание категории товаров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Категория товаров была успешно добавлена
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                      - The name field must be a string.
+                      - The name field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /product-categories/{id}:
+    get:
+      summary: Получить категорию товаров по идентификатору
+      description: Этот маршрут позволяет получить конкретную категорию товаров. У данного адреса нет ограничений на роли пользователей
+      operationId: getProductCategory
+      tags:
+        - ProductCategories
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор категории товаров    
+      responses:        
+        '200':
+          description: Успешный запрос на просмотр категории товаров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product-category:
+                    $ref: '#/components/schemas/ProductCategory'
+        '404':
+          description: Способ оплаты не найден                     
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error" 
+    delete:
+      summary: Удалить категорию товаров по идентификатору
+      description: Этот маршрут позволяет удалить категорию. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: deleteProductCategory
+      tags:
+        - ProductCategories
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор категории товаров   
+      responses:
+        '200':
+          description: Успешный запрос на удаление категории товаров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Категория товаров была успешно удалена
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"      
+  /product-categories/{id}/edit:
+    patch:
+      summary: Обновить категорию товаров по идентификатору
+      description: Этот маршрут позволяет обновить категорию товаров. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: updateProductCategory
+      tags:
+        - ProductCategories
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"          
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор категории товаров     
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Пицца"
+              required:
+                - name 
+      responses:
+        '200':
+          description: Успешный запрос на обновление категории товаров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Категория товаров была успешно обновлена
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                      - The name field must be a string.
+                      - The name field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"    
+  /products:
+    get:
+      summary: Получить список продуктов
+      description: Этот маршрут позволяет получить список продуктов. У данного адреса нет ограничений на роли пользователей
+      operationId: getProducts
+      tags:
+        - Products
+      responses:
+        '200':
+          description: Успешный запрос на просмотр продуктов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    $ref: '#/components/schemas/Products'
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Создать новый продукт
+      description: Этот маршрут позволяет создать новый продукт. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: createProduct
+      tags:
+        - Products
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"         
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Пицца"
+                category_id:
+                  type: integer
+                  example: 1
+                composition:
+                  type: string
+                  example: "Тесто, моцарелла, томаты"
+                calories:
+                  type: integer
+                  example: 300
+                price:
+                  type: integer
+                  example: 250
+              required:
+                - name 
+                - category_id
+                - composition
+                - calories
+                - price
+      responses:
+        '201':
+          description: Успешный запрос на создание продукта
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Продукт был успешно создан
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                    - The name field must be a string.
+                    - The name field is required.
+                  category_id:
+                    - The category id field must be an integer.  
+                    - The category id field is required.
+                  composition:
+                    - The composition field must be a string.
+                    - The composition field is required.
+                  calories:
+                    - The calories field must be an integer.
+                    - The calories field is required.
+                  price:    
+                    - The price field must be an integer.
+                    - The price field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /products/{id}:
+    get:
+      summary: Получить продукт по идентификатору
+      description: Этот маршрут позволяет получить конкретный продукт. У данного адреса нет ограничений на роли пользователей
+      operationId: getProduct
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор продукта 
+      responses:        
+        '200':
+          description: Успешный запрос на просмотр продукта
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          description: Товар не найден                     
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error" 
+    delete:
+      summary: Удалить продукт по идентификатору
+      description: Этот маршрут позволяет удалить продукт по идентификатору. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: deleteProduct
+      tags:
+        - Products
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"         
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор продукта
+      responses:
+        '200':
+          description: Успешный запрос на удаление продукта
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Продукт был успешно удален
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"      
+  /products/{id}/edit:
+    patch:
+      summary: Обновить продукт по идентификатору
+      description: Этот маршрут позволяет обновить продукт. Данный адрес доступен только пользователям с ролью Admin.
+      operationId: updateProduct
+      tags:
+        - Products
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin] # К данному маршруту имеют доступ пользователи с ролью "Admin"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор продукта     
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Пицца"
+                category_id:
+                  type: integer
+                  example: 1
+                composition:
+                  type: string
+                  example: "Тесто, моцарелла, томаты"
+                calories:
+                  type: integer
+                  example: 300
+                price:
+                  type: integer
+                  example: 250
+              required:
+                - name 
+                - category_id
+                - composition
+                - calories
+                - price
+      responses:
+        '200':
+          description: Успешный запрос на обновление продукта
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Продукт был успешно обновлен
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  name: 
+                    - The name field must be a string.
+                    - The name field is required.
+                  category_id:
+                    - The category id field must be an integer.  
+                    - The category id field is required.
+                  composition:
+                    - The composition field must be a string.
+                    - The composition field is required.
+                  calories:
+                    - The calories field must be an integer.
+                    - The calories field is required.
+                  price:    
+                    - The price field must be an integer.
+                    - The price field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"   
+  /orders:
+    get:
+      summary: Получить список заказов
+      description: Этот маршрут позволяет получить список заказов. Админы могут получить список всех заказов, а клиенты могут получить список только своих заказов
+      operationId: getOrders
+      tags:
+        - Orders
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin,Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"         
+      responses:
+        '200':
+          description: Успешный запрос на просмотр заказов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    $ref: '#/components/schemas/Orders'
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                      
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Создать новый заказ
+      description: Этот маршрут создает новый заказ.
+      operationId: createOrder
+      tags:
+        - Orders
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin,Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"           
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                status:
+                  type: string
+                total_amount:
+                  type: string
+                created_at:
+                  type: string
+                  format: date-time
+                updated_at:
+                  type: string
+                  format: date-time
+                user:
+                  $ref: '#/components/schemas/User'
+                address:
+                  $ref: '#/components/schemas/Address'
+                products:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+                payment_method:
+                  $ref: '#/components/schemas/PaymentMethod'
+                delivery_method:
+                  $ref: '#/components/schemas/DeliveryMethod'
+      responses:
+        '201':
+          description: Успешный запрос на создание заказа
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Заказ успешно создан
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  delivery_method_id: 
+                    - The name field must be an integer.
+                    - The delivery method id field is required.
+                  payment_method_id:
+                    - The payment method id field must be an integer.  
+                    - The payment method id field is required.
+                  address_id:
+                    - The address field must be an integer.
+                    - The address id field is required.
+                  status:
+                    - The calories field must be a string.
+                    - The status field is required.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+  /orders/{id}:
+    get:
+      summary: Получить заказ по идентификатору
+      description: Этот маршрут позволяет получить конкретный заказ. Админы могут получить любой заказ, а клиенты могут получить только собственный заказ
+      operationId: getOrder
+      tags:
+        - Orders
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin,Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"        
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор заказа
+      responses:        
+        '200':
+          description: Успешный запрос на просмотр продукта
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                     
+        '404':
+          description: Заказ не найден                     
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error" 
+    delete:
+      summary: Удалить заказ по идентификатору
+      description: Этот маршрут позволяет удалить заказ. Админы могут удалить любой заказ, а клиенты могут удалять только свои заказы
+      operationId: deleteOrder
+      tags:
+        - Orders
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin,Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"          
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор заказа
+      responses:
+        '200':
+          description: Успешный запрос на удаление заказа
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Заказ был успешно удален
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"      
+  /orders/{id}/edit:
+    patch:
+      summary: Обновить заказ по идентификатору
+      description: Этот маршрут позволяет обновить заказ. Админы могут обновить любой заказ, а клиенты могут обновить только собственные заказы
+      operationId: updateOrder
+      tags:
+        - Orders
+      security:
+        - apiKey: []  # Операция требует аутентификации с использованием apiKey
+      x-roles: [Admin,Client] # К данному маршруту имеют доступ пользователи с ролью "Admin" и "Client"          
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор продукта     
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                total_amount:
+                  type: string
+                user:
+                  $ref: '#/components/schemas/User'
+                address:
+                  $ref: '#/components/schemas/Address'
+                products:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+                payment_method:
+                  $ref: '#/components/schemas/PaymentMethod'
+                delivery_method:
+                  $ref: '#/components/schemas/DeliveryMethod'
+      responses:
+        '200':
+          description: Успешный запрос на обновление заказа
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Продукт был успешно обновлен
+        '403':
+          description: Текущему пользователю недоступна данная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessError"                         
+        '422':
+          description: Ошибка валидации входных данных
+          content:
+            application/json:
+              example:
+                errors:
+                  delivery_method_id: 
+                    - The name field must be an integer.
+                  payment_method_id:
+                    - The payment method id field must be an integer.  
+                  address_id:
+                    - The address field must be an integer.
+                  status:
+                    - The calories field must be a string.
+        'default':
+          description: Всё нестандартное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"   
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: Bearer token for authentication.
+  schemas:
+    User:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - surname
+        - patronymic
+        - phone
+        - date_of_birth
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Ivan"
+        surname:
+          type: string
+          example: "Ivanov"
+        patronymic:
+          type: string
+          example: "Ivanovich"
+        date_of_birth:
+          type: string
+          format: date
+          example: 2002-02-12
+        email:
+          type: string
+          format: email
+          example: "example@gmail.com"
+        email_verified_at:
+          type: boolean
+          example: true
+        phone:
+          type: string
+          example: "81234567890"
+        password:
+          type: string
+          example: "qwerty123"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-09T20:45:29.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-09T20:45:29.000000Z"
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    Users:
+      type: array
+      items: 
+        $ref: "#/components/schemas/User"
+    Address:
+      type: object
+      required:
+        - city
+        - street
+        - house_number
+        - user_id  
+      properties:
+        id:
+          type: integer
+        city:
+          type: string
+        street:
+          type: string
+        house_number:
+          type: string
+        apartment_number:
+          type: string
+        entrance:
+          type: string
+        floor:
+          type: string
+        intercom:
+          type: string
+        gate:
+          type: string
+        comment:
+          type: string
+        user_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Addresses:
+      type: array
+      items: 
+        $ref: "#/components/schemas/Address"
+    DeliveryMethod:
+      type: object
+      required:
+        - name  
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Самовывоз
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T08:00:00.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T08:30:00.000000Z"
+    DeliveryMethods:
+      type: array
+      items: 
+        $ref: "#/components/schemas/DeliveryMethod"
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Кредитная карта"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T08:00:00.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T08:30:00.000000Z"  
+    PaymentMethods:
+      type: array
+      items:
+        $ref: "#/components/schemas/PaymentMethod"
+    ProductCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Пицца"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T08:00:00.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T08:30:00.000000Z"  
+    ProductCategories:
+      type: array
+      items:
+        $ref: "#/components/schemas/ProductCategories"
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          enum:
+            - Admin
+            - Client
+            - Guest
+        guard_name:
+          type: string
+          example: "web"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-09T20:45:12.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-09T20:45:12.000000Z"
+        pivot:
+          type: object
+          properties:
+            model_id:
+              type: integer
+            role_id:
+              type: integer
+            model_type:
+              type: string      
+              example: "App\\Models\\User"
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Пепперони"
+        composition:
+          type: string
+          example: "Тонкое тесто, Моцарелла, томаты, соус"
+        calories:
+          type: integer
+          example: 300
+        price:
+          type: integer
+          example: 350
+        category_id:
+          type: integer
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-11T17:47:16.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-11T18:27:59.000000Z"
+        category:
+          type: object
+          items:
+            $ref: "#/components/schemas/ProductCategories"
+    Products:
+      type: array
+      items:
+        $ref: "#/components/schemas/Product"
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        status:
+          type: string
+          example: "В пути"
+        total_amount:
+          type: string
+          example: "300"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T11:00:23.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-10-12T11:00:23.000000Z"
+        user:
+          type: object
+          items:
+            $ref: "#/components/schemas/User"
+        address:
+          type: object
+          items:
+            $ref: "#/components/schemas/Address"
+        products:
+          type: array
+          items:
+            type: object
+            items:
+              $ref: "#/components/schemas/Product"
+        payment_method:
+          type: object
+          items:
+            $ref: "#/components/schemas/PaymentMethod"
+        delivery_method:
+          type: object
+          items:
+            $ref: "#/components/schemas/DeliveryMethod"
+    Orders:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+    Error:
+      type: object
+      required: 
+        - code
+        - message
+      properties:
+        code: 
+          type: integer
+        message: 
+          type: string
+    AccessError:
+      type: object
+      properties:
+        message:
+          type: string
+          example:
+            "Отказано в доступе"
