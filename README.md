@@ -1,66 +1,107 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# REST API для сайта по продаже пиццы
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Данный репозиторий содержит исходный код и документацию для REST API, разработанного для сайта по продаже пиццы. API предоставляет возможность управления пользователями, адресами, категориями товаров, способами доставки, способами оплаты, товарами и заказами. Проект использует Laravel для серверной части и OpenAPI (Swagger) для документации.
 
-## About Laravel
+## Структура проекта
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Проект разбит на следующие каталоги и файлы:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **app**: Содержит основные файлы приложения Laravel, включая контроллеры, модели, миграции и роутинг.
+- **database**: Здесь находятся миграции и сидеры для базы данных.
+- **routes**: Включает файлы с определением маршрутов для API.
+- **public**: Публичные ресурсы, такие как изображения и стили.
+- **tests**: Тесты для API.
+- **storage**: Хранилище для загруженных файлов, логов и временных данных.
+- **resources**: Шаблоны и представления.
+- **config**: Конфигурационные файлы Laravel.
+- **vendor**: Зависимости и библиотеки, устанавливаемые Composer.
+- **.env**: Файл окружения с настройками (не включен в репозиторий).
+- **swagger.yaml**: Файл с OpenAPI спецификацией.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Технологии
 
-## Learning Laravel
+Проект разработан с использованием следующих технологий и инструментов:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Laravel: PHP-фреймворк для разработки веб-приложений.
+- Composer: Пакетный менеджер для PHP.
+- OpenAPI и Swagger: Для документации API.
+- PHPUnit: Для написания и запуска тестов.
+- PostgreSQL: СУБД для хранения данных.
+- SQLite: СУБД для хранения тестовых данных
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Аутентификация и Роли
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Аутентификация
 
-## Laravel Sponsors
+Для аутентификации пользователей в нашем API мы используем Laravel Sanctum. Sanctum предоставляет надежную аутентификацию с использованием токенов, что позволяет пользователям регистрироваться, входить в систему и получать доступ к защищенным ресурсам.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Для регистрации нового пользователя отправьте POST-запрос на `/register`, предоставив необходимые данные.
 
-### Premium Partners
+```http
+POST /register
+{
+    "name": "Имя",
+    "email": "example@example.com",
+    "password": "ваш_пароль",
+    "surname": "Фамилия",
+    "patronymic": "Отчество",
+    "phone": "ваш_телефон",
+    "date_of_birth": "дата_рождения"
+}
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+После успешной регистрации вы получите токен доступа, который необходим для аутентификации в дальнейшем.
 
-## Contributing
+### Система Ролей
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Для определения ролей пользователей и управления доступом к различным частям API мы используем Laravel Spatie. Система ролей предоставляет следующие роли:
 
-## Code of Conduct
+- **Администратор (Admin)**: Пользователи с этой ролью имеют полный доступ ко всем ресурсам API.
+- **Клиент (Client)**: Зарегистрированные пользователи, которые имеют доступ к определенным ресурсам (например, создание заказов).
+- **Гость (Guest)**: Пользователи, которые не прошли аутентификацию, могут ограниченно взаимодействовать с API.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Установка и запуск
 
-## Security Vulnerabilities
+1. Клонируйте репозиторий на свой локальный компьютер:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+   ```bash
+   git clone https://github.com/Frenetz/api-pizza.git
+   cd api-pizza
+   ```
 
-## License
+2. Установите зависимости с помощью Composer:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+   ```bash
+   composer install
+   ```
+
+3. Создайте файл окружения `.env` на основе `.env.example` и укажите настройки базы данных.
+
+4. Выполните миграции и заполните базу данных:
+
+   ```bash
+   php artisan migrate
+   php artisan db:seed --class=RoleSeeder
+   ```
+*RoleSeeder - сидер для наполнения БД ролями пользователей
+
+5. Запустите веб-сервер:
+
+   ```bash
+   php artisan serve
+   ```
+
+## Использование API
+
+Документация API доступна через Swagger UI. Вы можете зарегистрироваться, авторизоваться и использовать различные точки API в соответствии с вашей ролью (администратор, клиент, гость).
+
+## Тестирование
+
+Проект включает набор тестов, которые можно запустить с помощью PHPUnit. Для запуска тестов используйте команду:
+
+```bash
+php artisan test
+```
+Конечно, давайте дополним шаблон README.md, чтобы включить информацию о аутентификации с использованием Laravel Sanctum и системе ролей через Laravel Spatie:
+
+```markdown
